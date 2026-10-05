@@ -1,4 +1,4 @@
-# The ⋆ Convergence Operator
+# The ★ Convergence Operator
 
 ### Prime-Normalized Spectral Projection onto Consistent Representations
 
