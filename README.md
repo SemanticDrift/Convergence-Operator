@@ -89,7 +89,7 @@ Orthogonal projection onto an affine set, least squares, the pseudoinverse, the 
 ## Citation
 
 ```
-Johnson, C. (2026). The ⋆ Convergence Operator: Prime-Normalized Spectral Projection onto Consistent Representations. DOI: 10.5281/zenodo.18232257
+Johnson, C. (2026). The ★ Convergence Operator: Prime-Normalized Spectral Projection onto Consistent Representations. DOI: 10.5281/zenodo.18232257
 ```
 
 ## License
