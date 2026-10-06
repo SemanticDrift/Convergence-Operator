@@ -1,4 +1,4 @@
-# The ★ Convergence Operator
+# The ⋆ Convergence Operator
 
 ### Prime-Normalized Spectral Projection onto Consistent Representations
 
@@ -36,11 +36,12 @@ A prime-exponent map sends every positive exact rational, however written, to on
 
 - **Nearest consistent state.** In the linear case, ⋆ψ is the unique nearest point of the consistent set to ψ.
 - **Error reduction.** When the true state satisfies the declared constraints, ⋆ never increases the error. For isotropic noise, the expected squared error falls from σ²n to σ²·dim ker δ.
+- **Known noise covariance.** For unequal or correlated errors with a known covariance Σ, the same law holds in the covariance-weighted norm, using the weighted operator ⋆_Σ. The covariance is an input: ⋆ does not estimate it.
 - **Spectral audit.** Kernel dimension, spectral gap, settling time, per-constraint residuals, and a feasibility certificate are reported with every projection.
 - **Equivalence classes.** Two states map to the same point exactly when their difference lies in the row space of the constraints.
 - **Adding constraints.** A new constraint never enlarges the invariant space and never reduces the artifact content.
 
-The guarantees hold relative to the constraints you declare. If the true state does not satisfy them, ⋆ returns the nearest state that does, and the error can increase. The paper states this in its Scope section and demonstrates it in Experiment K.
+The guarantees hold relative to the constraints and the noise model you declare. If the true state does not satisfy the constraints, ⋆ returns the nearest state that does, and the error can increase. The paper states this in its Scope section and demonstrates it in Experiment K.
 
 ## Quick start
 
@@ -71,8 +72,9 @@ The script reproduces every number in the paper.
 | I | Hierarchical forecast coherence (8 series) | Mean squared error 8.000 → 4.994 (law: 5) |
 | J | Clock-offset loop closure (8 nodes, 12 links) | Mean squared error 12.063 → 7.041 (law: 7) |
 | K | False constraint | Error 0 → 0.7071, the limit of the guarantee |
+| L | Flow network with unequal and with correlated noise, known covariance | Weighted-norm error 10.011 → 5.010 and 9.965 → 4.957 (law: 10 → 5) |
 
-Experiments H, I, and J use simulated noise on known true states. In H, I, and J, ⋆ was never worse than the raw observation in any of 20,000 trials. For equal-variance errors, H and I coincide with classical data reconciliation and least-squares forecast reconciliation, and the paper cites both.
+Experiments H, I, J, and L use simulated noise on known true states. In each of them, ⋆ was never worse than the raw observation in any of 20,000 trials. For equal-variance errors, H and I coincide with classical data reconciliation and least-squares forecast reconciliation, and the paper cites both. Experiment L supplies the true covariance, so it shows the mechanism and does not estimate Σ from data.
 
 ## Classical and specific
 
@@ -87,9 +89,9 @@ Orthogonal projection onto an affine set, least squares, the pseudoinverse, the 
 | `star_replication.py` | Reference implementation and all experiments |
 
 ## Citation
-
 ```
-Johnson, C. (2026). The ★ Convergence Operator: Prime-Normalized Spectral Projection onto Consistent Representations. DOI: 10.5281/zenodo.18232257
+Johnson, C. (2026). The ⋆ Convergence Operator: Prime-Normalized Spectral Projection onto Consistent Representations. Series: Mathematical Foundations for Universal Systems. SemanticDrift.
+DOI: [10.5281/zenodo.18232257](https://doi.org/10.5281/zenodo.18232257)
 ```
 
 ## License
@@ -98,4 +100,4 @@ Johnson, C. (2026). The ★ Convergence Operator: Prime-Normalized Spectral Proj
 Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
 Attribution required. https://creativecommons.org/licenses/by/4.0/
 
-Full publication list: https://www.semanticdrift.net
+Full publication list: https://www.SemanticDrift.net
