@@ -1,0 +1,424 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[margin=1.15in]{geometry}
+\usepackage{fontspec}
+\usepackage{amsmath,amsthm,mathtools}
+\usepackage{unicode-math}
+\setmainfont{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}
+\setmonofont{Latin Modern Mono}[Scale=MatchLowercase]
+\setmathfont{Latin Modern Math}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage[hidelinks,pdftitle={The ⋆ Convergence Operator: Prime-Normalized Spectral Projection onto Consistent Representations},pdfauthor={Carolina Johnson (CJ)},pdfsubject={Mathematical Foundations for Universal Systems}]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+\setlist{itemsep=0.2em,topsep=0.3em}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{example}{Example}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\norm}[1]{\lVert #1\rVert}
+\newcommand{\pinv}{^{+}}
+\newcommand{\tr}{^{\mathsf T}}
+\newcommand{\fP}{f_{P}}
+
+\lstset{basicstyle=\ttfamily\scriptsize,breaklines=true,columns=fullflexible,
+  frame=single,framerule=0.3pt,xleftmargin=0.5em,xrightmargin=0.5em,
+  showstringspaces=false,keepspaces=true}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\cfoot{\footnotesize\thepage}
+
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries The $\star$ Convergence Operator\par}
+\vspace{0.5em}
+{\Large Prime-Normalized Spectral Projection\\onto Consistent Representations\par}
+\vspace{1.2em}
+{\large\itshape Series: Mathematical Foundations for Universal Systems\par}
+\vspace{0.8em}
+{\large Carolina Johnson (CJ)\par}
+{\normalsize October 2026\par}
+\end{center}
+
+\vspace{0.6em}
+\begin{abstract}\noindent
+The $\star$ Convergence Operator sends a state to a state that satisfies a declared family of consistency constraints. When the constraints are linear in some chart, $\star$ is the orthogonal projection onto the consistent set: the nearest consistent state, computed by one pseudoinverse at cost $O(mn\min(m,n))$ for $m$ constraints on $n$ variables, which is $O(n^{3})$ for dense square systems. Its spectrum is an audit. The kernel dimension counts invariant degrees of freedom, the spectral gap sets the convergence rate of the associated flow, and per-constraint residuals localize inconsistency. Constraints of any smooth form are handled by the same flow; under full row rank and a bounded pseudoinverse, the residual decays exactly as $e^{-t}$ and the displacement has an explicit bound. Prime-exponent normalization maps every positive exact rational, however written, to one point of an integer lattice, so multiplicative relations such as ratios, base changes, and scale-factor unit conversions become linear constraints. When the true state satisfies the declared constraints, $\star$ never increases the error, and for isotropic noise the expected squared error falls from $\sigma^{2}n$ to $\sigma^{2}\dim\ker\delta$, and for a known noise covariance the same law holds in the covariance-weighted norm. A reference implementation reproduces every number in this paper, including flow-network reconciliation, hierarchical forecast coherence, and clock-offset loop closure.
+\end{abstract}
+
+
+\section{Introduction}
+
+A quantity is stored, transmitted, and computed in several representations: different bases, units, coordinate systems, and precisions. Each representation carries artifacts such as truncation, conversion residue, rounding, and mis-conversion. The task is to take a state and return the nearest state that satisfies every declared consistency constraint, and to report how much inconsistency was present and where.
+
+This paper defines one operator, $\star$, that does this. Its contributions are:
+\begin{enumerate}
+\item A single definition covering linear constraints (Section~\ref{sec:star}) and constraints of any smooth form (Section~\ref{sec:general}), with proofs.
+\item A prime-exponent chart in which multiplicative relations between positive exact rationals are linear (Section~\ref{sec:prime}).
+\item A spectral audit that reports kernel dimension, spectral gap, settling time, per-constraint residuals, and a feasibility certificate (Section~\ref{sec:audit}).
+\item A monotonicity result for adding constraints, which makes the operator extensible node by node (Section~\ref{sec:nodes}).
+\item A guarantee that $\star$ never increases the distance to a true state that satisfies the constraints, with an exact variance law (Section~\ref{sec:error}).
+\item A self-contained replication script and tables of results (Section~\ref{sec:replication}).
+\end{enumerate}
+The projection step is classical linear algebra \cite{penrose,benisrael}. Section~\ref{sec:related} states exactly what is classical and what is specific to this construction.
+
+\section{Prime normalization}\label{sec:prime}
+
+Let $\Q^{+}$ denote the positive rationals.
+
+\begin{definition}
+The prime-exponent map is $\fP:\Q^{+}\to\Z^{(\infty)}$,
+\[
+\fP(q)=\bigl(v_{2}(q),\,v_{3}(q),\,v_{5}(q),\,\dots\bigr),\qquad q=\prod_{p}p^{\,v_{p}(q)},
+\]
+where $v_{p}(q)\in\Z$ is the exponent of the prime $p$ in $q$ and only finitely many are nonzero. For a finite set $S$ of primes, $\fP^{S}$ denotes the restriction to the coordinates in $S$.
+\end{definition}
+
+\begin{proposition}\label{prop:fp}
+$\fP$ is a group isomorphism from $(\Q^{+},\times)$ onto $(\Z^{(\infty)},+)$. In particular $\fP(ab)=\fP(a)+\fP(b)$ and $\fP(a/b)=\fP(a)-\fP(b)$. The value $\fP(q)$ depends only on the rational number $q$, not on the base, notation, or numeral system used to write it.
+\end{proposition}
+
+\begin{proof}
+By the fundamental theorem of arithmetic \cite{hardywright}, every positive rational has a unique factorization into primes with integer exponents, so $\fP$ is well defined and bijective onto finitely supported integer vectors. Exponents add under multiplication. The factorization is a property of the number, so any two numerals denoting the same rational give the same vector. \qedhere
+\end{proof}
+
+Three consequences drive the rest of the paper.
+
+\emph{Base independence.} The expansion of $a/b$ in base $B$ terminates exactly when every prime factor of $b$ divides $B$ \cite{hardywright}. Whether an expansion is finite or repeating is therefore an artifact of $B$, while $\fP(a/b)$ is not.
+
+\emph{Artifacts become vectors.} If a stored value $q'$ stands for an intended value $q$, the gap vector $\fP(q'/q)$ is zero exactly when the two agree, and its nonzero entries identify which primes carry the discrepancy.
+
+\emph{Multiplicative relations are linear.} A relation of the form $\prod_i q_i^{c_i}=r$ with integer $c_i$ is the linear equation $\sum_i c_i\fP(q_i)=\fP(r)$.
+
+\begin{example}[Stacked fifths]
+Twelve perfect fifths against seven octaves gives $\fP\bigl((3/2)^{12}/2^{7}\bigr)=(-19,12)$ on $S=\{2,3\}$. The vector is nonzero because $2$ and $3$ are multiplicatively independent, so no stack of pure fifths closes. Its value is $3^{12}/2^{19}$, about $23.46$ cents.
+\end{example}
+
+\begin{remark}
+Every finite binary floating-point number is a dyadic rational $m\,2^{e}$ \cite{ieee754}, so floating-point values lie in the domain of $\fP$. The map $\fP$ is defined on positive exact rationals and linearizes multiplicative structure. Additive relations are stated in the plain coordinates of the same state space (Section~\ref{sec:constraints}).
+\end{remark}
+
+\section{Consistency constraints}\label{sec:constraints}
+
+The state space is $V=\R^{n}$ with the Euclidean inner product. A \emph{chart} is a choice of coordinates on $V$: plain values, prime exponents $\fP^{S}$, logarithms, or any other linear or smooth coordinate system.
+
+\begin{definition}
+A \emph{consistency constraint} is a pair $(\delta_i,b_i)$ with $\delta_i\in\R^{m_i\times n}$ and $b_i\in\R^{m_i}$, written in the chart where the relationship is linear. A state $x$ satisfies it when $\delta_i x=b_i$. Stacking $m$ constraints gives $\delta=[\delta_1;\dots;\delta_m]$ and $b=[b_1;\dots;b_m]$. The \emph{consistent set} is
+\[
+\mathcal{A}=\{x\in V:\ \delta x=b\}=\bigcap_{i}\{x:\ \delta_i x=b_i\},
+\qquad L=\delta\tr\delta=\sum_i\delta_i\tr\delta_i .
+\]
+\end{definition}
+
+Constraints are combined by stacking. Because $x\tr Lx=\sum_i\norm{\delta_i x}^{2}$, the kernel of $L$ is exactly $\bigcap_i\ker\delta_i$. No self-adjointness or commutativity assumption on the $\delta_i$ is used. The choice among adding, subtracting, multiplying, and dividing quantities is made inside each $\delta_i$ through the chart; the combination across constraints is always the intersection.
+
+\begin{remark}
+Composition is not a substitute for stacking. For a product, $\ker(\delta_1\delta_2)=\{x:\delta_2x\in\ker\delta_1\}$, which contains $\ker\delta_2$ and can be strictly larger than $\ker\delta_1\cap\ker\delta_2$. A product therefore certifies weaker consistency than stacking.
+\end{remark}
+
+\section{The \texorpdfstring{$\star$}{star} operator}\label{sec:star}
+
+\begin{definition}
+For $\psi\in V$, define
+\[
+\star\psi=\psi-\delta\pinv(\delta\psi-b),
+\]
+where $\delta\pinv$ is the Moore--Penrose pseudoinverse \cite{penrose,benisrael}.
+\end{definition}
+
+\begin{theorem}\label{thm:star}
+Let $x^{*}=\star\psi$ and let $\lambda_0$ be the smallest nonzero eigenvalue of $L$.
+\begin{enumerate}[label=(\alph*)]
+\item If $\mathcal{A}\neq\emptyset$, then $x^{*}\in\mathcal{A}$, and $x^{*}$ is the unique nearest point of $\mathcal{A}$ to $\psi$. The map $\star$ is idempotent. For $b=0$, $\star$ is the orthogonal projector onto $\ker L=\bigcap_i\ker\delta_i$.
+\item If $\mathcal{A}=\emptyset$, then $x^{*}$ minimizes $\norm{\delta x-b}$ over $V$, and among minimizers it is nearest to $\psi$. The minimum residual is $\norm{(I-\delta\delta\pinv)b}>0$.
+\item In both cases the flow $\dot x=-(Lx-\delta\tr b)$, $x(0)=\psi$, satisfies $x(t)\to x^{*}$ and
+\[
+\norm{x(t)-x^{*}}\le e^{-t\lambda_0}\,\norm{\psi-x^{*}} .
+\]
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Write $x^{*}=(I-\delta\pinv\delta)\psi+\delta\pinv b$.
+
+(a) Suppose $b=\delta\bar x$. Then $\delta\psi-b=\delta(\psi-\bar x)\in\operatorname{range}\delta$, so $\delta\delta\pinv(\delta\psi-b)=\delta\psi-b$ and $\delta x^{*}=b$. Moreover $\psi-x^{*}=\delta\pinv(\delta\psi-b)\in\operatorname{range}\delta\pinv=\operatorname{range}\delta\tr=(\ker\delta)^{\perp}$. Since $\mathcal{A}=x^{*}+\ker\delta$, the vector $\psi-x^{*}$ is orthogonal to the direction space of $\mathcal{A}$, so $x^{*}$ is the orthogonal projection of $\psi$ onto $\mathcal{A}$, which is the unique nearest point. A projection is idempotent. For $b=0$, $\star=I-\delta\pinv\delta$, the orthogonal projector onto $\ker\delta=\ker L$.
+
+(b) The minimizers of $\norm{\delta x-b}$ are $\delta\pinv b+\ker\delta$. The point $(I-\delta\pinv\delta)\psi$ is the projection of $\psi$ onto $\ker\delta$, so $x^{*}$ is the minimizer nearest to $\psi$. The minimum value is $\norm{b-\delta\delta\pinv b}$.
+
+(c) We have $Lx^{*}=\delta\tr\delta\delta\pinv b=\delta\tr b$, because $\delta\delta\pinv$ is symmetric and $\delta\tr\delta\delta\pinv=(\delta\delta\pinv\delta)\tr=\delta\tr$. The flow becomes $\dot x=-L(x-x^{*})$, so $x(t)-x^{*}=e^{-tL}(\psi-x^{*})$. Since $\psi-x^{*}\in\operatorname{range}\delta\tr=\operatorname{range}L$, on which $L\ge\lambda_0$, the bound follows. \qedhere
+\end{proof}
+
+\begin{corollary}\label{cor:heat}
+For $b=0$, $e^{-tL}\psi\to P_{\ker L}\psi$ and $\norm{e^{-tL}\psi-P_{\ker L}\psi}\le e^{-t\lambda_0}\norm{(I-P_{\ker L})\psi}$. Thus $\star=\lim_{t\to\infty}e^{-tL}$, with $e^{-tL}$ the finite-time spectral filter: mode $\lambda$ decays at rate $\lambda$ and modes with $\lambda=0$ are invariant.
+\end{corollary}
+
+\begin{corollary}[Equivalence classes]\label{cor:classes}
+Write $\star\psi=P\psi+c$ with $P=I-\delta\pinv\delta$ and $c=\delta\pinv b$. For all $\psi,\varphi\in V$, whether or not $\mathcal{A}$ is empty,
+\[
+\star\psi=\star\varphi\iff\psi-\varphi\in\ker P=\operatorname{range}\delta\tr .
+\]
+The fibers of $\star$ are the cosets $\psi+\operatorname{range}\delta\tr$. Each coset contains exactly one point of the image of $\star$, its canonical representative, and the image is the consistent set $\mathcal{A}$ when the constraints are feasible. States that differ by a vector in $\ker\delta$ are never identified.
+\end{corollary}
+
+\begin{proof}
+$\star\psi-\star\varphi=P(\psi-\varphi)$, and $P$ is the orthogonal projector onto $\ker\delta$, whose kernel is $(\ker\delta)^{\perp}=\operatorname{range}\delta\tr$. The image of $\star$ is $c+\ker\delta$ with $c\in\operatorname{range}\delta\tr$, which is the set of minimizers of $\norm{\delta x-b}$. Because $V=\ker\delta\oplus\operatorname{range}\delta\tr$ orthogonally, each coset meets $c+\ker\delta$ in exactly one point. \qedhere
+\end{proof}
+
+For $b=0$ the operator is linear: its kernel $\operatorname{range}\delta\tr=\operatorname{range}L$ holds the inconsistency modes that $\star$ removes, and its image $\ker L$ holds the invariant modes. The set where no inconsistency is present is the image of $\star$, not its kernel.
+
+\begin{remark}
+Two layers act in sequence. In the prime-exponent chart, notations of one rational are the same state (Proposition~\ref{prop:fp}), so they are identified before $\star$ acts. The operator $\star$ then identifies distinct states whose difference lies in $\operatorname{range}\delta\tr$, which is exactly the part that the declared constraints detect.
+\end{remark}
+
+\section{Spectral audit}\label{sec:audit}
+
+For a state $\psi$ and stacked constraints $(\delta,b)$, the audit reports the following.
+
+\begin{center}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.27\linewidth}>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}p{0.3\linewidth}@{}}
+\toprule
+Quantity & Definition & Meaning\\
+\midrule
+Spectrum & eigenvalues $\{\lambda_k\}$ of $L=\delta\tr\delta$ & decay rate of each mode\\
+Kernel dimension & $\dim\ker L$ & invariant degrees of freedom\\
+Spectral gap & $\lambda_0$, smallest nonzero $\lambda_k$ & convergence rate of the flow\\
+Settling time & $\ln(1/\varepsilon)/\lambda_0$ & time to reach relative error $\varepsilon$\\
+Per-constraint residual & $\delta_i\psi-b_i$ & which constraint is violated, and by how much\\
+Artifact content & $\norm{\psi-\star\psi}$ & distance moved by $\star$\\
+Feasibility residual & $\norm{(I-\delta\delta\pinv)b}$ & zero iff the constraints agree\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Modes with $\lambda>0$ are inconsistency modes and decay. Modes with $\lambda=0$ are the invariant structure and pass through $\star$ unchanged.
+
+\section{Constraints of any form}\label{sec:general}
+
+Let $g:\R^{n}\to\R^{m}$ be $C^{2}$ with Jacobian $J(x)=Dg(x)$, and let $b\in\R^{m}$. Define the flow
+\begin{equation}\label{eq:flow}
+\dot x=-J(x)\pinv\bigl(g(x)-b\bigr),\qquad x(0)=x_0 .
+\end{equation}
+This is a Newton-type flow \cite{nocedal}.
+
+\begin{theorem}\label{thm:general}
+Let $r_0=g(x_0)-b$, let $K>0$, and let $R=K\norm{r_0}$. Suppose that for every $x$ in the closed ball $\bar B(x_0,R)$ the matrix $J(x)$ has full row rank and $\norm{J(x)\pinv}\le K$. Then \eqref{eq:flow} has a unique solution on $[0,\infty)$, and
+\begin{enumerate}[label=(\alph*)]
+\item $g(x(t))-b=e^{-t}r_0$ for all $t\ge0$;
+\item $x(t)\to x_\infty$ with $g(x_\infty)=b$;
+\item $\norm{x_\infty-x_0}\le K\norm{r_0}$ and $\norm{x(t)-x_\infty}\le K\norm{r_0}\,e^{-t}$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+With full row rank, $J\pinv=J\tr(JJ\tr)^{-1}$ is $C^{1}$ in $x$, so the vector field is locally Lipschitz and a unique local solution exists. While $x(t)$ remains in the ball, $\tfrac{d}{dt}g(x(t))=J\dot x=-JJ\pinv(g-b)=-(g-b)$, which gives (a). Then $\norm{\dot x}\le K\norm{r_0}e^{-t}$, so $\norm{x(t)-x_0}\le K\norm{r_0}(1-e^{-t})<R$. The solution therefore never leaves the open ball, cannot blow up, and extends to $[0,\infty)$. The bound on $\norm{\dot x}$ is integrable, so $x(t)$ is Cauchy and converges to some $x_\infty$, and $g(x_\infty)=b$ by continuity and (a). Integrating the bound over $[t,\infty)$ and $[0,\infty)$ gives (c). \qedhere
+\end{proof}
+
+\begin{remark}
+For linear $g(x)=\delta x$ the flow \eqref{eq:flow} integrates to $x(t)=x_0-(1-e^{-t})\,\delta\pinv(\delta x_0-b)$, whose limit is $\star x_0$ of Section~\ref{sec:star}, with no rank hypothesis. The operator is therefore one object: $\star x_0=\lim_{t\to\infty}x(t)$. In the linear case the limit is the unique nearest consistent point. In the general case Theorem~\ref{thm:general} guarantees convergence to a consistent point within the stated displacement bound, and the starting point selects which consistent point. The flow \eqref{eq:flow} is a different trajectory from the heat flow of Theorem~\ref{thm:star}(c): the heat flow decays mode $k$ at rate $\lambda_k$, while \eqref{eq:flow} decays every component of the residual at the uniform rate $1$. Both converge to the same $\star\psi$.
+\end{remark}
+
+\begin{example}[Mixed constraint]
+Take $g(a,b,c,d)=ab+c-d$ with target $0$, a relation that multiplies and adds in one equation. The Jacobian row $(b,a,1,-1)$ has norm at least $\sqrt2$ everywhere, so the hypotheses of Theorem~\ref{thm:general} hold on every ball with $K=1/\sqrt2$, from every starting point.
+\end{example}
+
+\section{Adding constraints}\label{sec:nodes}
+
+A new node is a new block of rows in $\delta$.
+
+\begin{proposition}\label{prop:nodes}
+Let $\mathcal{A}_1,\mathcal{A}_2$ be consistent sets with $\mathcal{A}_1\cap\mathcal{A}_2\neq\emptyset$, with orthogonal projections $P_1,P_2,P_{12}$ onto $\mathcal{A}_1,\mathcal{A}_2,\mathcal{A}_1\cap\mathcal{A}_2$, and stacked operator $L=L_1+L_2$.
+\begin{enumerate}[label=(\alph*)]
+\item $\ker L=\ker L_1\cap\ker L_2$, so $\dim\ker L\le\min(\dim\ker L_1,\dim\ker L_2)$.
+\item $\norm{\psi-P_{12}\psi}\ge\max\bigl(\norm{\psi-P_1\psi},\norm{\psi-P_2\psi}\bigr)$.
+\item $(P_1P_2)^{k}\psi\to P_{12}\psi$ as $k\to\infty$, and if $P_1P_2=P_2P_1$ then $P_1P_2=P_{12}$.
+\item Every eigenvalue of $L$ is at least the corresponding eigenvalue of $L_1$, but the spectral gap need not increase.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) $x\tr Lx=\norm{\delta_1x}^{2}+\norm{\delta_2x}^{2}$. (b) $\mathcal{A}_1\cap\mathcal{A}_2$ is a subset of each $\mathcal{A}_i$, so its nearest point to $\psi$ is at least as far as the nearest point of $\mathcal{A}_i$. (c) Translating a common point to the origin reduces to subspaces, where the alternating projection theorem applies \cite{vonneumann,halperin}. For commuting projections the product is itself an orthogonal projector with range the intersection. (d) $L_2\succeq0$, so the ordered eigenvalues of $L_1+L_2$ dominate those of $L_1$ \cite{hornjohnson}. For the gap, take $n=2$, $\delta_1=\operatorname{diag}(1,0)$ and $\delta_2=(0,\varepsilon)$. Then $L_1$ has gap $1$ and $L=\operatorname{diag}(1,\varepsilon^{2})$ has gap $\varepsilon^{2}$. \qedhere
+\end{proof}
+
+Adding nodes never loses a constraint, never enlarges the invariant space, and never reduces the artifact content. When projections do not commute, applying the nodes one after another converges to the same result as applying them all at once.
+
+\section{Error reduction}\label{sec:error}
+
+Let the true state $x$ satisfy the declared constraints, $x\in\mathcal{A}$, and let $\psi$ be an observation of it.
+
+\begin{proposition}\label{prop:error}
+\begin{enumerate}[label=(\alph*)]
+\item $\norm{\psi-x}^{2}=\norm{\psi-\star\psi}^{2}+\norm{\star\psi-x}^{2}$. In particular $\norm{\star\psi-x}\le\norm{\psi-x}$.
+\item If $\psi=x+\varepsilon$ with $\mathbb{E}\varepsilon=0$ and $\operatorname{Cov}\varepsilon=\sigma^{2}I$, then $\mathbb{E}\norm{\star\psi-x}^{2}=\sigma^{2}\dim\ker\delta$, while $\mathbb{E}\norm{\psi-x}^{2}=\sigma^{2}n$.
+\item Let $\Sigma$ be positive definite, $\psi=x+\varepsilon$ with $\mathbb{E}\varepsilon=0$ and $\operatorname{Cov}\varepsilon=\Sigma$, and define
+\[
+\star_{\Sigma}\psi=\psi-\Sigma\delta\tr(\delta\Sigma\delta\tr)\pinv(\delta\psi-b).
+\]
+With $\norm{v}_{\Sigma^{-1}}^{2}=v\tr\Sigma^{-1}v$, we have $\norm{\star_\Sigma\psi-x}_{\Sigma^{-1}}\le\norm{\psi-x}_{\Sigma^{-1}}$, $\mathbb{E}\norm{\star_\Sigma\psi-x}_{\Sigma^{-1}}^{2}=\dim\ker\delta$, and $\mathbb{E}\norm{\psi-x}_{\Sigma^{-1}}^{2}=n$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+(a) By Theorem~\ref{thm:star}(a), $\psi-\star\psi\perp\ker\delta$, and $\star\psi-x\in\ker\delta$ because both points lie in $\mathcal{A}$. The Pythagorean identity follows. (b) Since $\star x=x$, we have $\star\psi-x=P(\psi-x)=P\varepsilon$ with $P=I-\delta\pinv\delta$ an orthogonal projector, so $\mathbb{E}\norm{P\varepsilon}^{2}=\sigma^{2}\operatorname{tr}P=\sigma^{2}\dim\ker\delta$. (c) Put $z=\Sigma^{-1/2}\psi$ and $\delta'=\delta\Sigma^{1/2}$. Since $A\pinv=A\tr(AA\tr)\pinv$ for every matrix $A$, we get $\Sigma^{1/2}\delta'^{+}=\Sigma\delta\tr(\delta\Sigma\delta\tr)\pinv$, so $\star_\Sigma\psi=\Sigma^{1/2}\star'z$, where $\star'$ is the operator for the constraints $(\delta',b)$ and $\delta'z=\delta\psi$. The true state $\Sigma^{-1/2}x$ satisfies these constraints, the noise $\Sigma^{-1/2}\varepsilon$ has identity covariance, $\norm{v}_{\Sigma^{-1}}=\norm{\Sigma^{-1/2}v}$, and $\dim\ker\delta'=\dim\ker\delta$. Parts (a) and (b) in the rescaled coordinates give the claims. \qedhere
+\end{proof}
+
+Part (a) holds for every observation, every constraint family, and every dimension: whenever the true state satisfies the declared constraints, applying $\star$ cannot move the estimate farther from it. Part (c) extends the statement to a known noise covariance, including unequal and correlated errors. For diagonal $\Sigma$ it is the rule of rescaling each coordinate by its standard deviation before applying $\star$. The covariance is an input: it comes from the instruments or the data, and $\star$ does not estimate it. The result is the classical minimum-variance linear unbiased estimate under the constraints when $\Sigma$ is the true covariance.
+
+\begin{remark}
+The guarantee requires the true state to satisfy the declared constraints. If it does not, $\star$ returns the nearest state that does, and the error can increase. With the false constraint $x_1=x_2$ and the true state $(1,2)$, a noiseless observation has error $0$ and $\star$ moves it by $1/\sqrt2$. Declaring constraints that the system obeys is the modeling step.
+\end{remark}
+
+\section{Algorithm}\label{sec:algorithm}
+
+\begin{center}
+\fbox{\begin{minipage}{0.92\linewidth}
+\textbf{Algorithm 1. Apply $\star$ with audit.}
+\begin{enumerate}[leftmargin=1.6em]
+\item Declare the state $\psi$, the charts, and the constraints $(\delta_i,b_i)$. Map exact rationals with $\fP^{S}$ wherever a relation is multiplicative.
+\item Stack $\delta$ and $b$.
+\item Compute $x^{*}=\psi-\delta\pinv(\delta\psi-b)$ by singular value decomposition.
+\item Audit: eigenvalues of $\delta\tr\delta$, kernel dimension, gap, per-constraint residual $\delta\psi-b$, artifact content $\norm{\psi-x^{*}}$, feasibility residual $\norm{\delta x^{*}-b}$.
+\item Verify: a feasibility residual below tolerance certifies consistency to that tolerance. A larger value certifies contradiction beyond that tolerance, and $x^{*}$ is the least-squares compromise.
+\item For nonlinear $g$, integrate the flow \eqref{eq:flow} with an ODE solver until $\norm{g-b}$ is below tolerance. By Theorem~\ref{thm:general}(a), integration time $\ln(\norm{r_0}/\mathrm{tol})$ suffices.
+\end{enumerate}
+\end{minipage}}
+\end{center}
+
+\textbf{Cost.} For $\delta\in\R^{m\times n}$ the singular value decomposition costs $O(mn\min(m,n))$ operations \cite{golub}, which is $O(n^{3})$ for dense $n\times n$ systems. Rank decisions use a tolerance relative to the largest singular value.
+
+\section{Engineering replication}\label{sec:replication}
+
+The script \texttt{star\_replication.py} runs every experiment below, prints each result, and asserts each claim. It requires Python~3 with \texttt{numpy}, \texttt{scipy}, and \texttt{sympy}. Run it with
+\begin{center}\texttt{python star\_replication.py}\end{center}
+A successful run ends with the line \texttt{ALL CHECKS PASSED}. The core functions are listed in Appendix~A.
+
+\begin{center}
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.07\linewidth}>{\raggedright\arraybackslash}p{0.36\linewidth}>{\raggedright\arraybackslash}p{0.5\linewidth}@{}}
+\toprule
+Exp. & Setup & Result\\
+\midrule
+A1 & $1/2$ written as decimal $0.5$, binary $0.1$, sexagesimal $0;30$, Egyptian $1/2$ & all four map to one point: $v_2=-1$, all other exponents $0$\\
+A2 & $0.333333$ against $1/3$ & gap vector $2^{-6}\,3^{3}\,5^{-6}\,7\cdot11\cdot13\cdot37$; relative error $-1.0\times10^{-6}$\\
+B & one frequency read as 480 Hz, 0.48 kHz, 28\,800 per minute; third reading mis-converted by $3/2$; three pairwise difference constraints over $S=\{2,3,5,7\}$ & residual norms $[0,\ 1.4142,\ 1.4142]$ localize the fault to reading~3; kernel dimension 4; gap 3.0; feasibility residual after $\star$ below $10^{-12}$; correction norms $[0.4714,\ 0.4714,\ 0.9428]$\\
+C & binary float $0.1$ against $1/10$ & relative error $5.55\times10^{-17}<2^{-53}$; gap vector has exponent $-54$ at prime 2, $+1$ at prime 5, and five nonzero exponents at primes above 7\\
+D & twelve fifths with constraint $\sum x_i=8400$ cents & each fifth $701.955\to700.000$; sum $8400$; initial violation $23.46$ cents; gap 12; flow error at $t=0.2$ equals the bound $e^{-t\lambda_0}\norm{\psi-x^{*}}=0.614371$\\
+G & random rank-4 constraints $\delta\in\mathbb{R}^{5\times8}$ with redundant rows, feasible and infeasible $b$, 1000 random pairs each & idempotency error at most $7.3\times10^{-15}$; differences in $\operatorname{range}\delta\tr$ give equal images to $7.7\times10^{-15}$; differences in $\ker\delta$ are preserved to $8.9\times10^{-16}$; residual at most $1.7\times10^{-14}$\\
+F & $g=ab+c-d$, three starting points & residual at limit below $3\times10^{-11}$; $g(3)/g(0)=0.049787=e^{-3}$; displacements $0.546,\ 3.593,\ 51.757$ against bounds $1.414,\ 17.678,\ 3535.534$\\
+H & flow network with 6 nodes and 10 edges, node-balance constraints, unit-variance noise on every edge, 20\,000 trials & mean squared error $9.972\to4.989$ (law: 5); never worse in any trial; gross error of $8\sigma$ on one edge: its two endpoints carry the two largest node residuals in 97.7\% of 2000 trials\\
+I & 8 hierarchical series with total $=A+B$, $A=A_1+A_2$, $B=B_1+B_2+B_3$, unit-variance noise, 20\,000 trials & mean squared error $8.000\to4.994$ (law: 5); never worse in any trial\\
+J & pairwise clock offsets on 8 nodes and 12 links (ring plus 4 chords), loop-closure constraints, 20\,000 trials & mean squared error $12.063\to7.041$ (law: 7); never worse in any trial\\
+L & flow network of H with unequal noise ($\sigma_i$ from 0.2 to 3) and with correlated noise ($\rho=0.8$), known $\Sigma$, 20\,000 trials each & weighted-norm error $10.011\to5.010$ and $9.965\to4.957$ (law: $10\to5$); never worse in any trial; plain squared error of unweighted $\star$ against $\star_\Sigma$: $16.153$ against $7.217$ (unequal) and $7.533$ against $4.317$ (correlated)\\
+K & false constraint $x_1=x_2$, true state $(1,2)$, no noise & error $0\to0.7071$\\
+E & random $n/2\times n$ systems, $n=100,200,400,800$ & wall time $0.002,\ 0.006,\ 0.021,\ 0.108$ s in one run; feasibility residual at most $1.7\times10^{-12}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+What each experiment shows:
+
+\begin{itemize}
+\item \textbf{A} shows that notation disappears under $\fP$ and that truncation appears as an exact lattice vector.
+\item \textbf{B} shows fault localization. Constraint 1 holds while constraints 2 and 3, both of which involve reading 3, fail. The corrected state returned by $\star$ is a real-valued consensus point, so its exponent vectors need not be integers. The residual identifies the reading to correct, and the corrected value is then recomputed exactly.
+\item \textbf{C} shows detection against a declared target. The gap vector measures the deviation of the stored float from the intended rational exactly, and its size agrees with the rounding bound of the format.
+\item \textbf{D} shows the equal-temperament closure as an affine projection, and shows that the bound of Theorem~\ref{thm:star}(c) is attained when $L$ has one nonzero mode.
+\item \textbf{G} verifies Corollary~\ref{cor:classes}: states in the same coset map to the same point, states differing inside $\ker\delta$ stay distinct, and this holds with redundant rows and with infeasible targets.
+\item \textbf{F} verifies Theorem~\ref{thm:general}(a) and (c) on a constraint that multiplies and adds.
+\item \textbf{H} reconciles measured flows in a network against node balance \cite{mah}. The mean squared error falls from $\sigma^{2}n$ to $\sigma^{2}\dim\ker\delta$, as Proposition~\ref{prop:error} states. Localization of a gross error by node residuals is an empirical rate, not a guarantee.
+\item \textbf{I} makes independent forecasts at several levels of a hierarchy coherent. For equal-variance errors $\star$ coincides with ordinary least-squares forecast reconciliation \cite{hyndman}.
+\item \textbf{J} closes loops in pairwise offset measurements, the same class of constraint as the twelve fifths of Experiment D.
+\item \textbf{L} verifies Proposition~\ref{prop:error}(c) for unequal and correlated noise with a known covariance, and shows the benefit: with the true covariance, $\star_\Sigma$ has smaller squared error than the unweighted $\star$. The experiment supplies the true $\Sigma$, so it shows the mechanism, not how to estimate $\Sigma$.
+\item \textbf{K} shows the limit of Proposition~\ref{prop:error}: the guarantee holds when the true state satisfies the declared constraints.
+\item \textbf{E} reports measured times. The $O(n^{3})$ statement in Section~\ref{sec:algorithm} is the operation count.
+\end{itemize}
+
+\section{Relationship to existing methods}\label{sec:related}
+
+The following parts are classical. Orthogonal projection onto an affine set, least squares, and the pseudoinverse solution \cite{penrose,benisrael} give Theorem~\ref{thm:star}. The flow $e^{-tL}$ is the heat semigroup of the positive semidefinite operator $L$, and its limit is the projection onto the kernel. The alternating projection theorem \cite{vonneumann,halperin} gives Proposition~\ref{prop:nodes}(c). Theorem~\ref{thm:general} is a statement about a Newton-type flow \cite{nocedal} for which the residual decays exactly as $e^{-t}$.
+
+The following parts are specific to this construction. (i) The prime-exponent chart $\fP$, which makes multiplicative relations between exact rationals linear and turns notation artifacts into integer lattice vectors. (ii) The formulation of representation consistency as a declared constraint family stacked by intersection, with one operator covering linear and nonlinear relations. (iii) The audit of Section~\ref{sec:audit}, which turns the spectrum of $L$ and the per-constraint residuals into engineering diagnostics. (iv) The node-addition properties of Proposition~\ref{prop:nodes} stated for representational constraints.
+
+\section{Scope}
+
+\begin{enumerate}
+\item The guarantees hold relative to the declared constraint family. Components of a state outside the range of the stacked $\delta$ pass through $\star$ unchanged, including any error that lies there.
+\item $\fP$ is defined on positive exact rationals and linearizes multiplicative relations, including scale-factor unit conversions. Additive relations, including offset conversions such as Celsius to Fahrenheit, are written in plain coordinates of the same state space, and Theorem~\ref{thm:general} covers relations that are linear in no chart.
+\item The error guarantee of Proposition~\ref{prop:error} holds when the true state satisfies the declared constraints.
+\item The variance statements hold for the noise model stated: isotropic in part (b) of Proposition~\ref{prop:error}, a known covariance in part (c). The covariance is an input, and $\star$ does not estimate it.
+\item In the linear case $\star\psi$ is the unique nearest consistent point. In the general case $\star\psi$ is a consistent point within the displacement bound of Theorem~\ref{thm:general}, selected by the starting point.
+\item Theorem~\ref{thm:general} requires full row rank of the Jacobian along the trajectory. Redundant linear constraints are covered by Theorem~\ref{thm:star}, which has no rank hypothesis.
+\end{enumerate}
+
+\begin{thebibliography}{99}\setlength{\itemsep}{0.3em}
+\bibitem{penrose} R. Penrose. A generalized inverse for matrices. \emph{Mathematical Proceedings of the Cambridge Philosophical Society}, 51(3):406--413, 1955.
+\bibitem{benisrael} A. Ben-Israel and T. N. E. Greville. \emph{Generalized Inverses: Theory and Applications}. 2nd ed. Springer, 2003.
+\bibitem{hardywright} G. H. Hardy and E. M. Wright. \emph{An Introduction to the Theory of Numbers}. 6th ed. Oxford University Press, 2008.
+\bibitem{ieee754} IEEE Standard for Floating-Point Arithmetic. IEEE Std 754-2019. IEEE, 2019.
+\bibitem{nocedal} J. Nocedal and S. J. Wright. \emph{Numerical Optimization}. 2nd ed. Springer, 2006.
+\bibitem{vonneumann} J. von Neumann. \emph{Functional Operators, Volume II: The Geometry of Orthogonal Spaces}. Annals of Mathematics Studies 22. Princeton University Press, 1950.
+\bibitem{halperin} I. Halperin. The product of projection operators. \emph{Acta Scientiarum Mathematicarum (Szeged)}, 23:96--99, 1962.
+\bibitem{hornjohnson} R. A. Horn and C. R. Johnson. \emph{Matrix Analysis}. 2nd ed. Cambridge University Press, 2013.
+\bibitem{golub} G. H. Golub and C. F. Van Loan. \emph{Matrix Computations}. 4th ed. Johns Hopkins University Press, 2013.
+\bibitem{mah} R. S. H. Mah, G. M. Stanley, and D. M. Downing. Reconciliation and rectification of process flow and inventory data. \emph{Industrial \& Engineering Chemistry Process Design and Development}, 15(1):175--183, 1976.
+\bibitem{hyndman} R. J. Hyndman, R. A. Ahmed, G. Athanasopoulos, and H. L. Shang. Optimal combination forecasts for hierarchical time series. \emph{Computational Statistics \& Data Analysis}, 55(9):2579--2589, 2011.
+\end{thebibliography}
+
+\appendix
+\section{Reference implementation (core)}
+
+The listing contains the functions that implement Sections~\ref{sec:prime}, \ref{sec:star}, \ref{sec:audit}, and~\ref{sec:general}. The full script with all experiments is \texttt{star\_replication.py}.
+
+\begin{lstlisting}[language=Python]
+import numpy as np
+from fractions import Fraction
+from sympy import factorint
+from scipy.integrate import solve_ivp
+
+def f_P(q):
+    """Prime-exponent map: positive rational -> sparse exponent vector."""
+    q = Fraction(q)
+    v = {}
+    for p, e in factorint(q.numerator).items():   v[p] = v.get(p, 0) + e
+    for p, e in factorint(q.denominator).items(): v[p] = v.get(p, 0) - e
+    return {p: e for p, e in v.items() if e != 0}
+
+def star_affine(psi, delta, b, tol=1e-10):
+    """Nearest point of {x : delta x = b} to psi, with spectral audit."""
+    delta = np.atleast_2d(np.asarray(delta, float))
+    x = psi - np.linalg.pinv(delta, rcond=tol) @ (delta @ psi - b)
+    lam = np.linalg.eigvalsh(delta.T @ delta)
+    k = int(np.sum(lam <= tol * lam[-1]))
+    return x, dict(
+        feas_residual=float(np.linalg.norm(delta @ x - b)),
+        kernel_dim=k,
+        gap=float(lam[k]) if k < len(lam) else np.inf,
+        artifact=float(np.linalg.norm(psi - x)),
+        per_constraint=delta @ psi - b)
+
+def star_flow(x0, g, J, b, T=40.0):
+    """Newton-type flow for constraints g(x) = b with Jacobian J(x)."""
+    f = lambda t, x: -(np.linalg.pinv(J(x)) @ (g(x) - b))
+    return solve_ivp(f, (0, T), x0, rtol=1e-11, atol=1e-13, dense_output=True)
+\end{lstlisting}
+
+\vfill
+{\footnotesize \textcopyright{} 2026 Carolina Johnson (CJ). Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0). Attribution required.\par}
+
+\end{document}
