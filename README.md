@@ -1,4 +1,4 @@
-# The ⋆ Convergence Operator
+# The ★ Convergence Operator
 
 ### Prime-Normalized Spectral Projection onto Consistent Representations
 
@@ -90,7 +90,7 @@ Orthogonal projection onto an affine set, least squares, the pseudoinverse, the 
 
 ## Citation
 ```
-Johnson, C. (2026). The ⋆ Convergence Operator: Prime-Normalized Spectral Projection onto Consistent Representations. Series: Mathematical Foundations for Universal Systems. SemanticDrift.
+Johnson, C. (2026). The ★ Convergence Operator: Prime-Normalized Spectral Projection onto Consistent Representations. Series: Mathematical Foundations for Universal Systems. SemanticDrift.
 DOI: [10.5281/zenodo.18232257](https://doi.org/10.5281/zenodo.18232257)
 ```
 
